@@ -46,10 +46,10 @@ namespace OscJack
             }
         }
 
-        public int TotalMessageCount {
+        public int TotalConsumedMessageCount {
             get {
-                UpdateState();
-                return _totalMessageCount;
+                // UpdateState();
+                return _totalConsumedMessageCount;
             }
         }
 
@@ -61,8 +61,16 @@ namespace OscJack
         public Object[] GetData(string address)
         {
             UpdateState();
-            Object[] data;
-            _dataStore.TryGetValue(address, out data);
+			Object[] data = null;
+
+			// return value from store if there actually was any received
+			// the last data received stays stored for address and would be returned indefinitely ...
+
+			if (this._lastConsumedMessageCount > 0)
+			{
+				_dataStore.TryGetValue (address, out data);
+			}
+
             return data;
         }
 
@@ -86,15 +94,20 @@ namespace OscJack
 
         Dictionary<string, Object[]> _dataStore;
         OscServer[] _servers;
-        int _totalMessageCount;
+        int _totalConsumedMessageCount;
+		int _lastConsumedMessageCount; // message count of the last UpdateState..
 
         void UpdateState()
         {
-            foreach (var server in _servers) {
+			this._lastConsumedMessageCount = 0;
+
+            foreach (var server in _servers)
+			{
                 while (server.MessageCount > 0) {
                     var message = server.PopMessage();
                     _dataStore[message.address] = message.data;
-                    _totalMessageCount++;
+					_totalConsumedMessageCount++;
+					this._lastConsumedMessageCount++;
                 }
             }
         }

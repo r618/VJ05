@@ -37,11 +37,18 @@ namespace OscJack
             EditorWindow.GetWindow<OscJackWindow>("OSC Jack");
         }
 
+		OscDirectory paintDirectory = null;
+
         void OnGUI()
         {
+			if (this.paintDirectory == null)
+			{
+				return;
+			}
+			
             EditorGUILayout.BeginVertical();
 
-            foreach (var item in OscMaster.MasterDirectory)
+			foreach (var item in this.paintDirectory)
             {
                 var data = item.Value;
                 var text = "";
@@ -60,7 +67,7 @@ namespace OscJack
 
         #region Update And Repaint
 
-        const int _updateInterval = 20;
+        const int _updateInterval = 5;
         int _countToUpdate;
         int _lastMessageCount;
 
@@ -69,11 +76,20 @@ namespace OscJack
             if (--_countToUpdate > 0) return;
             _countToUpdate = _updateInterval;
 
-            var mcount = OscMaster.MasterDirectory.TotalMessageCount;
-            if (mcount != _lastMessageCount) {
-                Repaint();
-                _lastMessageCount = mcount;
-            }
+            var mcount = OscMaster.MasterDirectory.TotalConsumedMessageCount;
+			if (mcount != _lastMessageCount)
+			{
+				_lastMessageCount = mcount;
+
+				this.paintDirectory = OscMaster.MasterDirectory;
+			}
+			else
+			{
+				// no change => no incoming data => paint nothing
+				this.paintDirectory = null;
+			}
+
+			Repaint ();
         }
 
         #endregion
